@@ -40,6 +40,7 @@
           (println "sort-val: loop: n/tag:" (n/tag (z/node (first new-loc)))))
       (if new-loc
         (let [new-z (first new-loc)
+              ;; TODO: rewrite-cljc - should not be a special case anymore?
               ; rewrite-cljs doesn't handle z/node for :uneval
               ; so we will get an :uneval node a different way
               new-node (if (= (z/tag new-z) :uneval)
