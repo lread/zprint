@@ -5,35 +5,6 @@
     [rewrite-cljc.zip :as z]))
 
 ;;
-;; No prewalk in rewrite-cljs, so we'll do it ourselves here
-;; for both environments, so that we can lean on the clj testing
-;; for cljs.
-;;
-
-;; TODO: rewrite-cljc we have prewalk in rewrite-cljc
-(defn- prewalk-subtree
-  [p? f zloc]
-  (loop [loc zloc]
-    (if (z/end? loc)
-      loc
-      (if (p? loc)
-        (if-let [n (f loc)]
-          (recur (z/next n))
-          (recur (z/next loc)))
-        (recur (z/next loc))))))
-
-(defn ^:no-doc prewalk
-  [zloc p? f]
-  (z/replace zloc
-             (z/root (prewalk-subtree p?
-                                      f
-                                      ; Make a zipper whose root is zloc
-                                      (some-> zloc
-                                              z/node
-                                              z/edn*)))))
-
-
-;;
 ;; # Routines to modify zippers inside of zprint
 ;;
 
@@ -91,7 +62,7 @@
 (defn sort-dependencies
   "Reorder the dependencies in a project.clj file."
   [caller options zloc]
-  (let [new-dep (prewalk zloc
+  (let [new-dep (z/prewalk zloc
                          #(and (= (z/tag %1) :token)
                                (= (z/sexpr %1) :dependencies))
                          sort-down)]
