@@ -4,128 +4,26 @@
     clojure.string
     zprint.zfns
     #?@(:clj [[zprint.redef]])
-    [rewrite-clj.parser :as p]
-    [rewrite-clj.node :as n]
-    [rewrite-clj.zip :as z]
-    #?@(:cljs [[rewrite-clj.zip.base :as zb] [rewrite-clj.zip.whitespace :as zw]
-               [rewrite-clj.zip.move :as zm] [rewrite-clj.zip.removez :as zr]
-               [rewrite-clj.zip.editz :as ze] clojure.zip])))
+    [rewrite-cljc.parser :as p]
+    [rewrite-cljc.node :as n]
+    [rewrite-cljc.zip :as z]))
 
 ;;
 ;; # Zipper oriented style printers
 ;;
 
-;;
-;; Note that both rewrite-clj and rewrite-cljs use the following namespaces:
-;;
-;; rewrite-clj.parse
-;; rewrite-clj.node
-;; rewrite-clj.zip
-;;
-;; and have many common routines.  So it is fine to use z/<fn> as long as
-;; that <fn> shows up in both libraries.
-;;
-
-;;
-;; ## clj and cljs compatibility routines
-;;
-;; ### Routines missing in :cljs since it uses clojure.zip
-;; 
-
-(def down*
-  #?(:clj z/down*
-     :cljs clojure.zip/down))
-
-(def up*
-  #?(:clj z/up*
-     :cljs clojure.zip/up))
-
-(def right*
-  #?(:clj z/right*
-     :cljs clojure.zip/right))
-
-(def left*
-  #?(:clj z/left*
-     :cljs clojure.zip/left))
-
-(def next*
-  #?(:clj z/next*
-     :cljs clojure.zip/next))
-
-(def prev*
-  #?(:clj z/prev*
-     :cljs clojure.zip/prev))
-
-(def replace*
-  #?(:clj z/replace*
-     :cljs clojure.zip/replace))
-
-(def insert-right*
-  #?(:clj z/insert-right*
-     :cljs clojure.zip/insert-right))
-
-;;
-;; ### Routines with different namespaces
-;;
-
-(def edn*
-  #?(:clj z/edn*
-     :cljs zb/edn*))
-
-(def sexpr
-  #?(:clj z/sexpr
-     :cljs zb/sexpr))
-
-(def string
-  #?(:clj z/string
-     :cljs zb/string))
-
-(def tag
-  #?(:clj z/tag
-     :cljs zb/tag))
-
-(def skip
-  #?(:clj z/skip
-     :cljs zw/skip))
-
 (defn whitespace?
   [zloc]
-  (or (= (tag zloc) :whitespace) (= (tag zloc) :newline) (= (tag zloc) :comma)))
+  (or (= (z/tag zloc) :whitespace) (= (z/tag zloc) :newline) (= (z/tag zloc) :comma)))
 
 ; indent-only
 (defn skip-whitespace
   ([zloc] (skip-whitespace z/right zloc))
-  ([f zloc] (skip f whitespace? zloc)))
+  ([f zloc] (z/skip f whitespace? zloc)))
 
 (defn whitespace-not-newline?
   [zloc]
-  (or (= (tag zloc) :whitespace) (= (tag zloc) :comma)))
-
-(def whitespace-or-comment?
-  #?(:clj z/whitespace-or-comment?
-     :cljs zw/whitespace-or-comment?))
-
-(def length
-  #?(:clj z/length
-     :cljs zb/length))
-
-(def rightmost?
-  #?(:clj z/rightmost?
-     :cljs zm/rightmost?))
-
-(def leftmost?
-  #?(:clj z/leftmost?
-     :cljs zm/leftmost?))
-
-; conflicts with clojure.core:
-
-(def zremove
-  #?(:clj z/remove
-     :cljs zr/remove))
-
-(def zreplace
-  #?(:clj z/replace
-     :cljs ze/replace))
+  (or (= (z/tag zloc) :whitespace) (= (z/tag zloc) :comma)))
 
 ;;
 ;; Check to see if we are at the focus by checking the
@@ -147,101 +45,101 @@
 
 (defn z-coll? "Is the zloc a collection?" [zloc] (z/seq? zloc))
 
-(defn zuneval? "Is this a #_(...)" [zloc] (= (tag zloc) :uneval))
+(defn zuneval? "Is this a #_(...)" [zloc] (= (z/tag zloc) :uneval))
 
-(defn zmeta? "Is this a ^{...}" [zloc] (= (tag zloc) :meta))
+(defn zmeta? "Is this a ^{...}" [zloc] (= (z/tag zloc) :meta))
 
 (defn zquote?
   "Is this a '(...) or '[ ... ] or some other quote?"
   [zloc]
-  (= (tag zloc) :quote))
+  (= (z/tag zloc) :quote))
 
-(defn zreader-macro? "Is this a @..." [zloc] (= (tag zloc) :reader-macro))
+(defn zreader-macro? "Is this a @..." [zloc] (= (z/tag zloc) :reader-macro))
 
-(defn ztag "Return the tag for this zloc" [zloc] (tag zloc))
+(defn ztag "Return the tag for this zloc" [zloc] (z/tag zloc))
 
 (defn znamespacedmap?
   "Is this a namespaced map?"
   [zloc]
-  (= (tag zloc) :namespaced-map))
+  (= (z/tag zloc) :namespaced-map))
 
 (defn zcomment?
   "Returns true if this is a comment."
   [zloc]
-  (when zloc (= (tag zloc) :comment)))
+  (when zloc (= (z/tag zloc) :comment)))
 
 (defn znewline?
   "Returns true if this is a newline."
   [zloc]
-  (when zloc (= (tag zloc) :newline)))
+  (when zloc (= (z/tag zloc) :newline)))
 
 (defn znumstr
   "Does z/string, but takes an additional argument for hex conversion.
   Hex conversion is not implemented for zippers, though, because at present
   it is only used for byte-arrays, which don't really show up here."
   [zloc _ _]
-  (string zloc))
+  (z/string zloc))
 
-(defn zstart "Find the zloc inside of this zloc." [zloc] (down* zloc))
+(defn zstart "Find the zloc inside of this zloc." [zloc] (z/down* zloc))
 
 (defn zfirst
   "Find the first non-whitespace zloc inside of this zloc, or
   the first whitespace zloc that is the focus."
   [zloc]
-  (let [nloc (down* zloc)] (if nloc (skip right* whitespace? nloc))))
+  (let [nloc (z/down* zloc)] (if nloc (z/skip z/right* whitespace? nloc))))
 
 (defn zfirst-no-comment
   "Find the first non-whitespace and non-comment zloc inside of this zloc."
   [zloc]
-  (let [nloc (down* zloc)] (if nloc (skip right* whitespace-or-comment? nloc))))
+  (let [nloc (z/down* zloc)] (if nloc (z/skip z/right* z/whitespace-or-comment? nloc))))
 
 (defn zsecond
   "Find the second non-whitespace zloc inside of this zloc."
   [zloc]
   (if-let [first-loc (zfirst zloc)]
-    (if-let [nloc (right* first-loc)] (skip right* whitespace? nloc))))
+    (if-let [nloc (z/right* first-loc)] (z/skip z/right* whitespace? nloc))))
 
 (defn zsecond-no-comment
   "Find the second non-whitespace zloc inside of this zloc."
   [zloc]
   (if-let [first-loc (zfirst-no-comment zloc)]
-    (if-let [nloc (right* first-loc)]
-      (skip right* whitespace-or-comment? nloc))))
+    (if-let [nloc (z/right* first-loc)]
+      (z/skip z/right* z/whitespace-or-comment? nloc))))
 
 (defn zthird
   "Find the third non-whitespace zloc inside of this zloc."
   [zloc]
   (some->> (zfirst zloc)
-           right*
-           (skip right* whitespace?)
-           right*
-           (skip right* whitespace?)))
+           z/right*
+           (z/skip z/right* whitespace?)
+           z/right*
+           (z/skip z/right* whitespace?)))
 
 (defn zthird-no-comment
   "Find the third non-whitespace zloc inside of this zloc."
   [zloc]
   (some->> (zfirst-no-comment zloc)
-           right*
-           (skip right* whitespace-or-comment?)
-           right*
-           (skip right* whitespace-or-comment?)))
+           z/right*
+           (z/skip z/right* z/whitespace-or-comment?)
+           z/right*
+           (z/skip z/right* z/whitespace-or-comment?)))
 
 (defn zfourth
   "Find the fourth non-whitespace zloc inside of this zloc."
   [zloc]
   (some->> (zfirst zloc)
-           right*
-           (skip right* whitespace?)
-           right*
-           (skip right* whitespace?)
-           right*
-           (skip right* whitespace?)))
+           z/right*
+           (z/skip z/right* whitespace?)
+           z/right*
+           (z/skip z/right* whitespace?)
+           z/right*
+           (z/skip z/right* whitespace?)))
 
 (defn zrightnws
   "Find the next non-whitespace zloc inside of this zloc. Returns nil
   if nothing left."
   [zloc]
-  (if zloc (if-let [nloc (right* zloc)] (skip right* whitespace? nloc))))
+  (if zloc (if-let [nloc (z/right* zloc)] (z/skip z/right* whitespace? nloc))))
 
 (defn znextnws-w-nl
   "Find the next non-whitespace zloc inside of this zloc considering 
@@ -249,7 +147,7 @@
   why this is nextnws and not rightnws, since it is exposed in zfns."
   [zloc]
   (if zloc
-    (if-let [nloc (right* zloc)] (skip right* whitespace-not-newline? nloc))))
+    (if-let [nloc (z/right* zloc)] (z/skip z/right* whitespace-not-newline? nloc))))
 
 (defn zrightmost
   "Find the rightmost non-whitespace zloc at this level"
@@ -261,7 +159,7 @@
 (defn zleftnws
   "Find the next non-whitespace zloc inside of this zloc."
   [zloc]
-  (if zloc (if-let [nloc (left* zloc)] (skip left* whitespace? nloc))))
+  (if zloc (if-let [nloc (z/left* zloc)] (z/skip z/left* whitespace? nloc))))
 
 (defn zleftmost
   "Find the leftmost non-whitespace zloc at this level"
@@ -281,12 +179,12 @@
 (defn zprevnws
   "Find the next non-whitespace zloc."
   [zloc]
-  (if-let [ploc (prev* zloc)] (skip prev* whitespace? ploc)))
+  (if-let [ploc (z/prev* zloc)] (z/skip z/prev* whitespace? ploc)))
 
 (defn znthnext
   "Find the nth non-whitespace zloc inside of this zloc."
   [zloc n]
-  (loop [nloc (skip-whitespace (down* zloc))
+  (loop [nloc (skip-whitespace (z/down* zloc))
          i ^long n]
     (if (or (nil? nloc) (= i 0)) nloc (recur (zrightnws nloc) (dec i)))))
 
@@ -294,12 +192,12 @@
   "Find the locations (counting from zero, and only counting non-whitespace
   elements) of the first zthing?.  Return its index if it is found, nil if not."
   [zthing? zloc]
-  (loop [nloc (skip-whitespace (down* zloc))
+  (loop [nloc (skip-whitespace (z/down* zloc))
          i 0]
     (when (not (nil? nloc))
       (if (zthing? nloc) i (recur (zrightnws nloc) (inc i))))))
 
-(defn znl [] "Return a zloc which is a newline." (edn* (p/parse-string "\n")))
+(defn znl [] "Return a zloc which is a newline." (z/edn* (p/parse-string "\n")))
 
 (defn multi-nl
   "Return a sequence of zloc newlines."
@@ -314,8 +212,8 @@
   [zloc]
   (let [comment-no-nl (p/parse-string
                         (clojure.string/replace-first (z/string zloc) "\n" ""))
-        new-comment (replace* zloc comment-no-nl)
-        new-comment (insert-right* new-comment (p/parse-string "\n"))]
+        new-comment (z/replace* zloc comment-no-nl)
+        new-comment (z/insert-right* new-comment (p/parse-string "\n"))]
     new-comment))
 
 (defn zmap-w-bl
@@ -327,7 +225,7 @@
   ease handling of these multi-line newlines, this routine will
   split them up into multiple individual newlines."
   [zfn zloc]
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          blank? false
          previous-was-nl? false
          previous-comment? nil
@@ -336,8 +234,8 @@
       out
       (let [ws? (whitespace? nloc)
             nl? (= (z/tag nloc) :newline)
-            nl-len (when nl? (length nloc))
-            multi-nl? (when nl? (> (length nloc) 1))
+            nl-len (when nl? (z/length nloc))
+            multi-nl? (when nl? (> (z/length nloc) 1))
             emit-nl? (or (and blank? nl?) multi-nl?)
             ; newline thing to emit
             nl-to-emit (when emit-nl?
@@ -364,7 +262,7 @@
                ", multi-nl?" multi-nl?
                ", emit-nl?" emit-nl?
                ", nl-to-emit" (map z/string nl-to-emit))
-        (recur (right* nloc)
+        (recur (z/right* nloc)
                (if blank?
                  ; If already blank, then if it is whitespace it is still
                  ; blank.  That includes newlines (which are ws? too).
@@ -391,7 +289,7 @@
   comment split actually changes the zipper for the rest of the
   sequence, where the newline splits do not."
   [zfn zloc]
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          out []]
     (if-not nloc
       out
@@ -401,14 +299,14 @@
             ; This may reset the nloc for the rest of the sequence!
             nloc (if comment? (split-newline-from-comment nloc) nloc)
             result (when (not (whitespace? nloc)) (zfn nloc))
-            nl-len (when nl? (length nloc))
-            multi-nl? (when nl? (> (length nloc) 1))
+            nl-len (when nl? (z/length nloc))
+            multi-nl? (when nl? (> (z/length nloc) 1))
             ; newline thing to emit
             nl-to-emit
               (when nl?
                 (if multi-nl? (mapv zfn (multi-nl nl-len)) [(zfn nloc)]))]
         #_(println "zmap-w-nl: tag:" (z/tag nloc))
-        (recur (right* nloc)
+        (recur (z/right* nloc)
                (cond result (conj out result)
                      nl-to-emit (apply conj out nl-to-emit)
                      :else out))))))
@@ -419,7 +317,7 @@
   This will also split newlines into separate zlocs if they were
   multiple, and split the newline off the end of a comment."
   [zfn zloc]
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          out []]
     (if-not nloc
       out
@@ -430,14 +328,14 @@
             ; This may reset the nloc for the rest of the sequence!
             nloc (if comment? (split-newline-from-comment nloc) nloc)
             result (when (or (not (whitespace? nloc)) comma?) (zfn nloc))
-            nl-len (when nl? (length nloc))
-            multi-nl? (when nl? (> (length nloc) 1))
+            nl-len (when nl? (z/length nloc))
+            multi-nl? (when nl? (> (z/length nloc) 1))
             ; newline thing to emit
             nl-to-emit
               (when nl?
                 (if multi-nl? (mapv zfn (multi-nl nl-len)) [(zfn nloc)]))]
         #_(println "zmap-w-nl-comma: tag:" (z/tag nloc))
-        (recur (right* nloc)
+        (recur (z/right* nloc)
                (cond result (conj out result)
                      nl-to-emit (apply conj out nl-to-emit)
                      :else out))))))
@@ -448,7 +346,7 @@
   up in every comment is also split out into a separate zloc."
   [zfn zloc]
   #_(prn "zmap: zloc" (z/string zloc))
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          previous-comment? nil
          out []]
     (if-not nloc
@@ -460,18 +358,18 @@
             result (when (or (not (whitespace? nloc))
                              (and nl? previous-comment?))
                      (zfn nloc))]
-        (recur (right* nloc) comment? (if result (conj out result) out))))))
+        (recur (z/right* nloc) comment? (if result (conj out result) out))))))
 
 ; This was the original zmap before all of the changes...
 (defn zmap-alt
   "Return a vector containing the return of applying a function to 
   every non-whitespace zloc inside of zloc."
   [zfn zloc]
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          out []]
     (if-not nloc
       out
-      (recur (right* nloc)
+      (recur (z/right* nloc)
              (if-let [result (when (not (whitespace? nloc)) (zfn nloc))]
                (conj out result)
                out)))))
@@ -480,20 +378,20 @@
   "Return the count of non-whitespace elements in zloc.  Comments are
   counted as one thing, commas are ignored as whitespace."
   [zloc]
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          i 0]
     (if-not nloc
       i
-      (recur (right* nloc) (if (not (whitespace? nloc)) (inc i) i)))))
+      (recur (z/right* nloc) (if (not (whitespace? nloc)) (inc i) i)))))
 
 ; Used in core.cljc
 (defn zmap-all
   "Return a vector containing the return of applying a function to 
   every zloc inside of zloc."
   [zfn zloc]
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          out []]
-    (if-not nloc out (recur (right* nloc) (conj out (zfn nloc))))))
+    (if-not nloc out (recur (z/right* nloc) (conj out (zfn nloc))))))
 
 (defn zseqnws
   "Return a seq of all of the non-whitespace children of zloc."
@@ -517,7 +415,7 @@
   make the current zloc the rightmost."
   [zloc]
   (loop [nloc zloc]
-    (if (rightmost? nloc) nloc (recur (zremove (right* nloc))))))
+    (if (z/rightmost? nloc) nloc (recur (z/remove (z/right* nloc))))))
 
 (defn ztake-append
   "Considering the current zloc a collection, move down into it and
@@ -525,11 +423,11 @@
   given element to the end, coercing it into a node/zloc.  Note, this 
   is not quite implemented that way, as it uses replace."
   [n zloc end-struct]
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          index 0]
     (if (>= index n)
-      (up* (zremove-right (zreplace nloc end-struct)))
-      (let [xloc (right* nloc)]
+      (z/up* (zremove-right (z/replace nloc end-struct)))
+      (let [xloc (z/right* nloc)]
         (recur xloc (if (whitespace? xloc) index (inc index)))))))
 
 (defn zcount-zloc-seq-nc-nws
@@ -538,7 +436,7 @@
   take a zloc, but rather a zloc-seq (i.e., a seq of elements, each of
   which is a zloc)."
   [zloc-seq]
-  (reduce #(if (whitespace-or-comment? %2) %1 (inc %1)) 0 zloc-seq))
+  (reduce #(if (z/whitespace-or-comment? %2) %1 (inc %1)) 0 zloc-seq))
 
 (defn find-root-and-path
   "Create a vector with the root as well as another vector
@@ -550,9 +448,9 @@
     (loop [nloc zloc
            left 0
            out ()]
-      (if-not (left* nloc)
-        (if-not (up* nloc) [nloc out] (recur (up* nloc) 0 (cons left out)))
-        (recur (left* nloc) (inc left) out)))))
+      (if-not (z/left* nloc)
+        (if-not (z/up* nloc) [nloc out] (recur (z/up* nloc) 0 (cons left out)))
+        (recur (z/left* nloc) (inc left) out)))))
 
 (defn find-root-and-path-nw
   "Create a vector with the root as well as another vector
@@ -564,9 +462,9 @@
     (loop [nloc zloc
            left 0
            out ()]
-      (if-not (left* nloc)
-        (if-not (up* nloc) [nloc out] (recur (up* nloc) 0 (cons left out)))
-        (recur (left* nloc) (if (whitespace? nloc) left (inc left)) out)))))
+      (if-not (z/left* nloc)
+        (if-not (z/up* nloc) [nloc out] (recur (z/up* nloc) 0 (cons left out)))
+        (recur (z/left* nloc) (if (whitespace? nloc) left (inc left)) out)))))
 
 (defn find-root
   "Find the root from a zloc by doing lots of ups."
@@ -576,11 +474,11 @@
 (defn move-down-and-right
   "Move one down and then right a certain number of steps."
   [zloc ^long right-count]
-  (loop [nloc (down* zloc)
+  (loop [nloc (z/down* zloc)
          remaining-right right-count]
     (if (zero? remaining-right)
       nloc
-      (recur (right* nloc) (dec remaining-right)))))
+      (recur (z/right* nloc) (dec remaining-right)))))
 
 (defn follow-path
   "Follow the path vector from the root and return the zloc
@@ -588,20 +486,20 @@
   [path-vec zloc]
   (reduce move-down-and-right zloc path-vec))
 
-(defn zanonfn? "Is this an anonymous fn?" [zloc] (= (tag zloc) :fn))
+(defn zanonfn? "Is this an anonymous fn?" [zloc] (= (z/tag zloc) :fn))
 
 (defn zlast
   "Return the last non-whitespace (but possibly comment) element inside
   of this zloc."
   [zloc]
-  (let [nloc (down* zloc)] (when nloc (zrightmost nloc))))
+  (let [nloc (z/down* zloc)] (when nloc (z/rightmost nloc))))
 
 (defn zsexpr?
   "Returns true if this can be converted to an sexpr. Works around a bug
   where n/printable-only? returns false for n/tag :fn, but z/sexpr fails
   on something with n/tag :fn"
   [zloc]
-  (and zloc (not= :fn (tag zloc)) (not (n/printable-only? (z/node zloc)))))
+  (and zloc (not= :fn (z/tag zloc)) (not (n/printable-only? (z/node zloc)))))
 
 ;
 ; This doesn't work, because there are situations where (zsexpr? zloc)
@@ -620,7 +518,7 @@
 (defn zsymbol?
   "Returns true if this is a symbol."
   [zloc]
-  (and zloc (zsexpr? zloc) (symbol? (sexpr zloc))))
+  (and zloc (zsexpr? zloc) (symbol? (z/sexpr zloc))))
 
 (defn znil?
   "Returns true if this is nil."
@@ -658,7 +556,7 @@
 (defn zdotdotdot
   "Return a zloc that will turn into a string of three dots."
   []
-  (edn* (p/parse-string "...")))
+  (z/edn* (p/parse-string "...")))
 
 (defn zconstant?
   "Returns true if this is a keyword, string, or number, in other words,
@@ -675,7 +573,7 @@
                  #_(println "zconstant?:" (z/string zloc)
                             "\n z-coll?" (z-coll? zloc)
                             "z/tag:" (z/tag zloc))
-                 (let [sexpr (sexpr zloc)]
+                 (let [sexpr (z/sexpr zloc)]
                    (or (string? sexpr)
                        (number? sexpr)
                        (= "true" (str sexpr))
@@ -694,7 +592,7 @@
   (loop [nloc (z/down zloc)]
     (when nloc
       (if (and (zkeyword? nloc) (= (z/string nloc) ":doc"))
-        (when (string? (sexpr (z/right nloc))) (z/right nloc))
+        (when (string? (z/sexpr (z/right nloc))) (z/right nloc))
         (recur (z/right (z/right nloc)))))))
 
 (defn find-docstring
@@ -703,7 +601,7 @@
   (let [fn-name (z/string (z/down zloc))]
     (cond (or (= fn-name "defn") (= fn-name "defmacro"))
             (let [docloc (z/right (z/right (z/down zloc)))]
-              (when (string? (sexpr docloc)) docloc))
+              (when (string? (z/sexpr docloc)) docloc))
           (= fn-name "def") (let [maploc (z/down (z/right (z/down zloc)))]
                               (when (z/map? maploc) (find-doc-in-map maploc)))
           :else nil)))
@@ -717,13 +615,13 @@
   [zloc spec-str]
   #_(println "spec-str:" spec-str)
   (if-let [doc-zloc (find-docstring zloc)]
-    (let [new-doc-zloc (replace* doc-zloc
-                                 (z/node (edn* (p/parse-string
+    (let [new-doc-zloc (z/replace* doc-zloc
+                                 (z/node (z/edn* (p/parse-string
                                                  (str "\""
-                                                      (str (sexpr doc-zloc))
+                                                      (str (z/sexpr doc-zloc))
                                                       spec-str
                                                       "\"")))))]
-      (edn* (z/root new-doc-zloc)))
+      (z/edn* (z/root new-doc-zloc)))
     zloc))
 
 (defn zlift-ns
@@ -772,13 +670,13 @@
                       (recur ns
                              (next pair-seq)
                              (conj out
-                                   (cons (edn* (n/token-node (strip-ns (z/sexpr
+                                   (cons (z/edn* (n/token-node (strip-ns (z/sexpr
                                                                          k))))
                                          rest-of-pair))))
                     (recur current-ns
                            (next pair-seq)
                            (conj out
-                                 (cons (edn* (n/token-node (strip-ns (z/sexpr
+                                 (cons (z/edn* (n/token-node (strip-ns (z/sexpr
                                                                        k))))
                                        rest-of-pair))))
                   (when (= (count pair) 1)
@@ -807,7 +705,7 @@
                   :else (recur (next pair-seq)
                                (conj out
                                      ; put ns with k
-                                     (cons (edn* (n/token-node
+                                     (cons (z/edn* (n/token-node
                                                    (symbol
                                                      (str ns "/" (z/sexpr k)))))
                                            rest-of-pair)))))))
@@ -824,7 +722,7 @@
     zprint.zfns/znumstr znumstr
     zprint.zfns/zbyte-array? (constantly false)
     zprint.zfns/zcomment? zcomment?
-    zprint.zfns/zsexpr sexpr
+    zprint.zfns/zsexpr z/sexpr
     zprint.zfns/zseqnws zseqnws
     zprint.zfns/zseqnws-w-nl zseqnws-w-nl
     zprint.zfns/zseqnws-w-bl zseqnws-w-bl
@@ -869,7 +767,7 @@
     zprint.zfns/zobj-to-vec (constantly nil)
     zprint.zfns/zexpandarray (constantly nil)
     zprint.zfns/znewline? znewline?
-    zprint.zfns/zwhitespaceorcomment? whitespace-or-comment?
+    zprint.zfns/zwhitespaceorcomment? z/whitespace-or-comment?
     zprint.zfns/zmap-all zmap-all
     zprint.zfns/zpromise? (constantly false)
     zprint.zfns/zfuture? (constantly false)

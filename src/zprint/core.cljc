@@ -19,12 +19,13 @@
               get-explained-all-options get-default-options validate-options
               apply-style perform-remove no-color-map merge-deep]]
             [zprint.zutil :refer
-             [zmap-all zcomment? edn* whitespace? string find-root-and-path-nw]]
+             [zmap-all zcomment? whitespace? find-root-and-path-nw]]
             [zprint.sutil]
             [zprint.focus :refer [range-ssv]]
             [zprint.range :refer
              [expand-range-to-top-level split-out-range reassemble-range]]
-            [rewrite-clj.parser :as p]
+            [rewrite-cljc.parser :as p]
+            [rewrite-cljc.zip :as z]
             #_[clojure.spec.alpha :as s])
   #?@(:clj ((:import (java.net URL URLConnection)
                      (java.util.concurrent Executors)
@@ -275,7 +276,7 @@
   (when (and (coll? z)
              (let [type-str (pr-str (type (first z)))]
                (and (> (count type-str) 16)
-                    (= "rewrite_clj.node" (subs type-str 0 16)))))
+                    (= "rewrite_cljc.node" (subs type-str 0 17)))))
     ;  (= "rewrite_clj.node" (subs (pr-str (type (first z))) 0 16)))
     z))
 
@@ -293,7 +294,7 @@
               (expand-tabs (:size (:tab options)) x)
               x)
           n (p/parse-string (clojure.string/trim x))]
-      (when n (edn* n)))
+      (when n (z/edn* n)))
     (when (zipper? x) x)))
 
 ;;
@@ -561,7 +562,7 @@
   :respect-bl, or indent-only are set."
   [options ssv coll no-respect?]
   (when (cond (string? coll) (not (clojure.string/blank? coll))
-              (zipper? coll) (not (clojure.string/blank? (rewrite-clj.zip/string
+              (zipper? coll) (not (clojure.string/blank? (z/string
                                                            coll)))
               :else nil)
     (if (or (not no-respect?) (not (any-respect-at-all? options)))
@@ -599,7 +600,7 @@
                                                rest-options)
                                              zprint-str-internal
                                              ":parse-string-all? call"
-                                             (edn* (p/parse-string-all coll)))]
+                                             (z/edn* (p/parse-string-all coll)))]
           (dbg rest-options "zprint-str-internal ^^^ pmf ^^^ pmf ^^^ pmf ^^^")
           result)
         (throw (#?(:clj Exception.
@@ -909,7 +910,7 @@
                                            (zero? indent)
                                            (:process-bang-zprint? rest-options))
                                   (get-options-from-comment (inc zprint-num)
-                                                            (string form)))
+                                                            (z/string form)))
         ; Develop the internal-options we want to call the zprint-fn
         ; with, and also an options map with those integrated we can use
         ; to decide what we are doing ourselves. zprint-fn will integrate
@@ -925,7 +926,7 @@
                       (if (:interpose (:parse decision-options))
                         ; we are getting rid of all whitespace between expr
                         0
-                        (spaces? (zprint.zutil/string form))
+                        (spaces? (z/string form))
                         #_(if (= (:left-space (:parse decision-options)) :drop)
                             ; we are getting rid of just spaces between expr
                             (spaces? (zprint.zutil/string form))
@@ -960,7 +961,7 @@
                        ; used to be next-options but if not a comment then
                        ; they are in internal-options
                        (= :skip (:format internal-options))))
-            (string form)
+            (z/string form)
             ; call zprint-str-internal or an alternative if one exists
             (zprint-fn internal-options form))
         local? (or (= :skip (:format new-options))
@@ -1295,7 +1296,7 @@
                          "after count:" (count after-lines)
                          "range:" range))
              ends-with-nl? (clojure.string/ends-with? file-str "\n")
-             forms (edn* (p/parse-string-all filestring))
+             forms (z/edn* (p/parse-string-all filestring))
              pmf-options {:process-bang-zprint? true}
              pmf-options (if (:interpose (:parse (get-options)))
                            (assoc pmf-options :trim-comments? true)

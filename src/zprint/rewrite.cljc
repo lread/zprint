@@ -1,13 +1,8 @@
 (ns zprint.rewrite
   (:require
     clojure.string
-    [zprint.zutil :as zu :refer [string tag zreplace sexpr edn*]]
-    [rewrite-clj.parser :as p]
-    [rewrite-clj.node :as n]
-    [rewrite-clj.zip :as z]
-    #?@(:cljs [[rewrite-clj.zip.base :as zb] [rewrite-clj.zip.whitespace :as zw]
-               [rewrite-clj.zip.move :as zm] [rewrite-clj.zip.removez :as zr]
-               [rewrite-clj.zip.editz :as ze] clojure.zip])))
+    [rewrite-cljc.parser :as p]
+    [rewrite-cljc.zip :as z]))
 
 ;;
 ;; No prewalk in rewrite-cljs, so we'll do it ourselves here
@@ -15,6 +10,7 @@
 ;; for cljs.
 ;;
 
+;; TODO: rewrite-cljc we have prewalk in rewrite-cljc
 (defn- prewalk-subtree
   [p? f zloc]
   (loop [loc zloc]
@@ -34,7 +30,7 @@
                                       ; Make a zipper whose root is zloc
                                       (some-> zloc
                                               z/node
-                                              edn*)))))
+                                              z/edn*)))))
 
 
 ;;

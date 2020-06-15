@@ -7,10 +7,7 @@
             [clojure.edn :as edn]
             [clojure.java.io :as io]
             [clojure.repl :refer :all]
-            [clojure.string :as str]
-            [rewrite-clj.parser :as p :only [parse-string parse-string-all]]
-            [rewrite-clj.node :as n]
-            [rewrite-clj.zip :as z :only [edn*]])
+            [clojure.string :as str])
   (:import (com.sun.net.httpserver HttpHandler HttpServer)
            (java.net InetSocketAddress)
            (java.io File ByteArrayOutputStream PrintStream)

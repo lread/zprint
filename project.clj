@@ -6,7 +6,8 @@
             :key "mit",
             :year 2015}
   :plugins
-    [[lein-expectations "0.0.8"] [lein-codox "0.10.3"] [lein-zprint "1.0.0"]]
+  [[lein-expectations "0.0.8"] [lein-codox "0.10.3"] [lein-zprint "1.0.0"] [reifyhealth/lein-git-down "0.3.6"]]
+  :middleware [lein-git-down.plugin/inject-properties]
   :profiles {:repl {:dependencies [#_[com.taoensso/tufte "1.1.1"]
                                    #_[org.clojure/clojurescript "1.9.946"]
                                    ;[rum "0.10.8"];
@@ -41,6 +42,7 @@
      #_[org.clojure/clojure "1.10.2-alpha1"]
      [org.clojure/clojure "1.9.0"]
      #_[org.clojure/clojure "1.8.0"]
-     [rewrite-cljs "0.4.5" :exclusions [[org.clojure/clojurescript]]]
      [borkdude/edamame "0.0.11-alpha.12"]
-     [rewrite-clj "0.6.1" :exclusions [[com.cemerick/austin]]]])
+     [rewrite-cljc "0df7d6723062995956567b997c490bee8a6641e2"]]
+  :repositories [["public-github" {:url "git://github.com"}]]
+  :git-down {rewrite-cljc {:coordinates lread/rewrite-cljc-playground}})

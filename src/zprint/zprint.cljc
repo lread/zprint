@@ -19,8 +19,7 @@
     [zprint.ansi :refer [color-str]]
     [zprint.config :refer [validate-options merge-deep]]
     [zprint.zutil :refer [add-spec-to-docstring]]
-    [rewrite-clj.parser :as p]
-    [rewrite-clj.zip :as z]
+    [rewrite-cljc.zip :as z]
     #_[taoensso.tufte :as tufte :refer (p defnp profiled profile)]))
 
 #_(tufte/add-basic-println-handler! {})
@@ -2716,12 +2715,12 @@
   (loop [nloc zloc
          index 0]
     #_(prn "next-newline:" (zstring nloc) "tag:" (zprint.zutil/tag nloc))
-    (let [next-right (zprint.zutil/right* nloc)]
+    (let [next-right (z/right* nloc)]
       (if next-right
         (if (at-newline? nloc)
           [index nloc]
-          (recur (zprint.zutil/right* nloc)
-                 (if-not (zprint.zutil/whitespace? nloc) (inc index) index)))
+          (recur (z/right* nloc)
+                 (if-not (z/whitespace? nloc) (inc index) index)))
         [index nloc]))))
 
 (defn length-after-newline
@@ -2764,12 +2763,12 @@
   (loop [ploc zloc
          total-up 0]
     #_(prn "left-or-up: ploc:" (zstring ploc) "total-up:" total-up)
-    (let [next-left (zprint.zutil/left* ploc)]
+    (let [next-left (z/left* ploc)]
       (if next-left
         [total-up next-left]
         ; can't go left, what about up?
-        (let [moving-up (zprint.zutil/up* ploc)
-              up-tag (when moving-up (zprint.zutil/tag moving-up))
+        (let [moving-up (z/up* ploc)
+              up-tag (when moving-up (z/tag moving-up))
               up-size (tag-l-size up-tag)]
           #_(prn "left-or-up: up-tag:" up-tag)
           (if-not moving-up
@@ -2814,7 +2813,7 @@
     (if-not nloc
       nloc
       (let [next-nloc (zprint.zutil/zrightnws nloc)
-            next-tag (zprint.zutil/tag next-nloc)]
+            next-tag (z/tag next-nloc)]
         #_(prn "nloc:" nloc
                "next-actual: next-nloc:" (zstring next-nloc)
                "next-tag:" next-tag)
@@ -3156,7 +3155,7 @@
          ; configured.
          already-hung? (when (and indent-only-style
                                   (= indent-only-style :input-hang))
-                         (hang-zloc? (zprint.zutil/down* zloc)))
+                         (hang-zloc? (z/down* zloc)))
          raw-indent (if (and arg-1-indent already-hung?)
                       (- arg-1-indent ind)
                       flow-indent)
@@ -4967,6 +4966,7 @@
   used."
   [options ind zloc]
   (let [zstr (zstring (zfirst zloc))
+        ;; TODO: rewrite-cljc still true?
         ; rewrite-cljs parses #?@ differently from rewrite-clj.  In
         ; rewrite-cljs zfirst is ?@, not ?, so deal with that.
         ; Not clear which is correct, I could see it go either way.
@@ -5305,14 +5305,14 @@
   Assumes zloc is a comment."
   [zloc]
   #_(prn "inlinecomment? zloc:" (zstring zloc))
-  (loop [nloc (zprint.zutil/left* zloc)
+  (loop [nloc (z/left* zloc)
          spaces 0
          passed-nl? false]
     (let [tnloc (ztag nloc)]
       #_(prn "inlinecomment? tnloc:" tnloc)
       (cond
         (nil? tnloc) nil  ; the start of the zloc
-        (= tnloc :newline) (recur (zprint.zutil/left* nloc) spaces true)
+        (= tnloc :newline) (recur (z/left* nloc) spaces true)
         (or (= tnloc :comment) (= tnloc :comment-inline))
           ; Two comments in a row don't have a newline showing between
           ; them, it is captured by the first comment.  Sigh.
@@ -5333,8 +5333,8 @@
                     nil))))
         (not= tnloc :whitespace)
           (if passed-nl? nil [spaces (length-before zloc)])
-        :else (recur (zprint.zutil/left* nloc)
-                     ^long (+ ^long (zprint.zutil/length nloc) spaces)
+        :else (recur (z/left* nloc)
+                     ^long (+ ^long (z/length nloc) spaces)
                      passed-nl?)))))
 
 (defn last-space

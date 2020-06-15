@@ -6,9 +6,8 @@
             [zprint.finish :refer :all]
             [clojure.repl :refer :all]
             [clojure.string :as str]
-            [rewrite-clj.parser :as p :only [parse-string parse-string-all]]
-            [rewrite-clj.node :as n]
-            [rewrite-clj.zip :as z :only [edn*]]))
+            [rewrite-cljc.parser :as p]
+            [rewrite-cljc.zip :as z]))
 
 ;; Keep some of the test on wrapping so they still work
 ;!zprint {:comment {:wrap? false}}

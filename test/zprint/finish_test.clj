@@ -6,10 +6,7 @@
             [zprint.config :refer :all :exclude
              [set-options! configure-all! get-options]]
             [zprint.finish :refer :all]
-            [clojure.string :as str]
-            [rewrite-clj.parser :as p :only [parse-string parse-string-all]]
-            [rewrite-clj.node :as n]
-            [rewrite-clj.zip :as z :only [edn*]]))
+            [clojure.string :as str]))
 
 ;
 ; Keep tests from configuring from any $HOME/.zprintrc or local .zprintrc
